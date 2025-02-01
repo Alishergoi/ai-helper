@@ -1,0 +1,76 @@
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader } from "lucide-react";
+import axios from "axios";
+import { useSession } from "next-auth/react";
+import { toast } from "react-hot-toast";
+import Link from "next/link";
+
+export default function AIHelper() {
+  const { data: session } = useSession();
+  const [query, setQuery] = useState("");
+  const [response, setResponse] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [usage, setUsage] = useState(0);
+
+  const handleSubmit = async () => {
+    if (!query) return;
+    if (!session) return toast.error("Авторизуйтесь для использования AI");
+    if (usage >= 5) return toast.error("Лимит бесплатных запросов исчерпан. Оформите подписку!");
+
+    setLoading(true);
+    setResponse("");
+
+    try {
+      const res = await axios.post("/api/ai", { query });
+      setResponse(res.data.response);
+      setUsage(usage + 1);
+    } catch (error) {
+      toast.error("Ошибка при получении ответа AI");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      <Card className="shadow-lg p-4">
+        <CardContent>
+          <h2 className="text-xl font-bold mb-4">AI-Помощник</h2>
+          {!session ? (
+            <p className="text-red-500">Авторизуйтесь, чтобы использовать AI</p>
+          ) : (
+            <>
+              <Textarea
+                placeholder="Введите вопрос (например, напиши код или реферат)"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="mb-4"
+              />
+              <Button onClick={handleSubmit} disabled={loading}>
+                {loading ? <Loader className="animate-spin" /> : "Отправить"}
+              </Button>
+              <p className="text-sm mt-2">
+                Бесплатные запросы: {5 - usage}/5 {usage >= 5 && (
+                  <Link href="/pricing" className="text-blue-500 underline ml-2">
+                    Оформить подписку
+                  </Link>
+                )}
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
+      {response && (
+        <Card className="shadow-lg p-4 mt-4">
+          <CardContent>
+            <h3 className="text-lg font-bold">Ответ:</h3>
+            <p>{response}</p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
