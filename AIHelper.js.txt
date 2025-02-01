@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
@@ -27,11 +26,13 @@ export default function AIHelper() {
     try {
       const res = await axios.post("/api/ai", { query });
       setResponse(res.data.response);
-      setUsage(usage + 1);
+      setUsage((prevUsage) => prevUsage + 1);
     } catch (error) {
+      console.error("Ошибка API:", error);
       toast.error("Ошибка при получении ответа AI");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -50,12 +51,13 @@ export default function AIHelper() {
                 className="mb-4"
               />
               <Button onClick={handleSubmit} disabled={loading}>
-                {loading ? <Loader className="animate-spin" /> : "Отправить"}
+                {loading ? <LoaderCircle className="animate-spin w-5 h-5" /> : "Отправить"}
               </Button>
               <p className="text-sm mt-2">
-                Бесплатные запросы: {5 - usage}/5 {usage >= 5 && (
-                  <Link href="/pricing" className="text-blue-500 underline ml-2">
-                    Оформить подписку
+                Бесплатные запросы: {5 - usage}/5{" "}
+                {usage >= 5 && (
+                  <Link href="/pricing" legacyBehavior>
+                    <a className="text-blue-500 underline ml-2">Оформить подписку</a>
                   </Link>
                 )}
               </p>
